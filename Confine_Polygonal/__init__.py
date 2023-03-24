@@ -19,7 +19,6 @@ from Grain import Grain, Grain_Image
 import Contact_gg
 import Contact_gimage
 import Owntools
-import Owntools.Confinement
 import Owntools.Plot
 
 #-------------------------------------------------------------------------------
@@ -53,10 +52,11 @@ def DEM_confine_load(dict_algorithm, dict_material, dict_sample, dict_sollicitat
     dict_sample['L_i_image'] = []
     #trackers
     dict_tracker['vertical_force_L'] = []
-    dict_tracker['compacity_L'] = []
-    dict_tracker['dy_top_L'] = []
     dict_tracker['Ecin_L'] = []
     dict_tracker['Force_L'] = []
+    dict_tracker['vertical_force_mean_L'] = []
+    dict_tracker['y_top_L'] = []
+    vertical_force_L_tempo = []
 
     while DEM_loop_statut :
 
@@ -165,33 +165,35 @@ def DEM_confine_load(dict_algorithm, dict_material, dict_sample, dict_sollicitat
                 #contact gg needed to be convert into gimage
                 Owntools.convert_gg_into_gimage(grain, dict_sample, dict_material)
 
-        #Control the top group to have the pressure target
-        dy_top, Fv = Control_Top_PID(dict_algorithm, dict_sollicitations['Vertical_Confinement_Force'], dict_sample['L_g'])
-        #Apply confinement force
-        for grain in dict_sample['L_g'] :
-            if grain.group == 'Top':
-                grain.move_as_a_group(np.array([0, dy_top]), dict_algorithm['dt_DEM'])
-        dict_sample['y_box_max'] = dict_sample['y_box_max'] + dy_top
+        #Increment top group
+        if (dict_algorithm['i_DEM']-i_DEM_0-1) % dict_sollicitations['i_apply_dy_top']  == 0 :
+            if vertical_force_L_tempo != [] :
+                dict_tracker['vertical_force_mean_L'].append(np.mean(vertical_force_L_tempo[int(dict_sollicitations['i_apply_dy_top']/2):]))
+                dict_tracker['y_top_L'].append(dict_sample['y_box_max'])
+                vertical_force_L_tempo = []
+            for grain in dict_sample['L_g'] :
+                if grain.group == 'Top':
+                    grain.move_as_a_group(np.array([0, dict_sollicitations['dy_top']]), dict_algorithm['dt_DEM'])
+            dict_sample['y_box_max'] = dict_sample['y_box_max'] + dict_sollicitations['dy_top']
 
-        #compute compacity, force applied on current grains and kinetic energy of current grains
-        Surface_g = 0
+        #compute force applied on top and current grains and kinetic energy of current grains
+        Fv = 0
         Force_applied = 0
         Ecin = 0
         for grain in dict_sample['L_g']:
-            Surface_g = Surface_g + grain.surface
             if grain.group == 'Current':
                 Force_applied = Force_applied + np.linalg.norm([grain.fx, grain.fy])
                 Ecin = Ecin + 0.5 * grain.mass * np.dot(grain.v, grain.v)
+            if grain.group == 'Top':
+                Fv = Fv + grain.fy
 
         #tracker
-        dict_tracker['compacity_L'].append(Surface_g/((dict_sample['y_box_max']-dict_sample['y_box_min'])*(dict_sample['x_box_max']-dict_sample['x_box_min'])))
         dict_tracker['vertical_force_L'].append(Fv)
-        dict_tracker['dy_top_L'].append(dy_top)
         dict_tracker['Ecin_L'].append(Ecin)
         dict_tracker['Force_L'].append(Force_applied)
 
         if dict_algorithm['i_DEM'] % dict_algorithm['i_print_plot'] == 0:
-            print('i_DEM',dict_algorithm['i_DEM'],': Confinement',int(100*Fv/dict_sollicitations['Vertical_Confinement_Force']),'%')
+            print('i_DEM',dict_algorithm['i_DEM'],'/',dict_sollicitations['i_DEM_stop'],'('+str(int(dict_algorithm['i_DEM']/dict_sollicitations['i_DEM_stop']*100))+' %)')
             if dict_algorithm['Debug_DEM'] :
                 Owntools.Plot.Plot_Config_Confinement(dict_sample,dict_algorithm['i_DEM'])
 
@@ -203,38 +205,6 @@ def DEM_confine_load(dict_algorithm, dict_material, dict_sample, dict_sollicitat
 
     #plot trackers
     Owntools.Plot.Plot_own(list(range(0,len(dict_tracker['vertical_force_L']))),dict_tracker['vertical_force_L'], 'Vertical force', 'Debug/Confinement/vertical_force.png')
-    Owntools.Plot.Plot_own(list(range(0,len(dict_tracker['dy_top_L']))),dict_tracker['dy_top_L'], 'dy', 'Debug/Confinement/dy.png')
     Owntools.Plot.Plot_own(list(range(0,len(dict_tracker['Ecin_L']))),dict_tracker['Ecin_L'], 'Kinetic energy', 'Debug/Confinement/ecin.png')
     Owntools.Plot.Plot_own(list(range(0,len(dict_tracker['Force_L']))),dict_tracker['Force_L'], 'Force applied', 'Debug/Confinement/force.png')
-
-#-------------------------------------------------------------------------------
-
-def Control_Top_PID(dict_algorithm, Force_target, L_g):
-    """
-    Control the upper wall to apply force.
-
-    A PID corrector is applied.
-        Input :
-            an algorithm dictionnary (a dict)
-            a confinement value (a float)
-            a list of grain (a list)
-        Output :
-            the displacement of the top group (a float)
-            a force applied on the top group before control (a float)
-    """
-    #compute vertical force applied on top group
-    F = 0
-    for grain in L_g :
-        if grain.group == 'Top':
-            F = F + grain.fy
-    #compare with the target value
-    error = F - Force_target #to have dy_top < 0 is F < Force_target
-    #corrector
-    ki = 0
-    kd = 0
-    dy_top = error * dict_algorithm['kp']
-    #compare with maximum value
-    if abs(dy_top) > dict_algorithm['dy_top_max'] :
-        dy_top = np.sign(dy_top)*dict_algorithm['dy_top_max']
-
-    return dy_top, F
+    Owntools.Plot.Plot_own(dict_tracker['y_top_L'],dict_tracker['vertical_force_mean_L'], 'y top - confinement force', 'Debug/Confinement/y_top_fv.png')

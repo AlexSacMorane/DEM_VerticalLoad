@@ -22,7 +22,6 @@ import Confine_Polygonal
 import Contact_gg
 import Contact_gimage
 import Grain
-import Shear_Polygonal
 import Report
 import User
 import Owntools
@@ -58,9 +57,9 @@ def plan_simulation():
     if Path('Debug').exists():
         shutil.rmtree('Debug')
     os.mkdir('Debug')
-    if dict_algorithm['Debug'] or dict_algorithm['Debug_DEM'] or dict_ic['Debug_DEM_IC'] :
+    if dict_algorithm['Debug_DEM'] or dict_ic['Debug_DEM'] :
         if dict_algorithm['Debug_DEM'] :
-            os.mkdir('Debug/Shear')
+            os.mkdir('Debug/Confinement')
         if dict_ic['Debug_DEM'] :
             os.mkdir('Debug/Init_disks')
             os.mkdir('Debug/Init_polygons')
@@ -73,7 +72,7 @@ def plan_simulation():
     if dict_algorithm['SaveData'] :
         #check if save folder exists
         if not Path('../'+dict_algorithm['main_folder_name']).exists():
-            shutil.mkdir('../'+dict_algorithm['main_folder_name'])
+            os.mkdir('../'+dict_algorithm['main_folder_name'])
         i_run = 1
         folderpath = Path('../'+dict_algorithm['main_folder_name']+'/'+dict_algorithm['template_simulation_name']+str(i_run))
         while folderpath.exists():
@@ -146,7 +145,7 @@ def define_group(dict_algorithm, dict_ic, dict_sample, simulation_report):
         elif grain.is_group(dict_sample['y_box_max'] - dict_algorithm['top_height'], dict_sample['y_box_max'], 'Top') :
             i_top = i_top + 1
     simulation_report.write_and_print('\nDefine groups\n','\nDefine groups')
-    simulation_report.write_and_print(str(i_bottom)+' grains in Bottom group\n'+str(i_top)+' grains in Top group\n\n', str(i_bottom)+' grains in Bottom group\n'+str(i_top)+' grains in Top group\n')
+    simulation_report.write_and_print(str(i_bottom)+' grains in Bottom group\n'+str(i_top)+' grains in Top group\n\n', str(i_bottom)+' grains in Bottom group\n'+str(i_top)+' grains in Top group')
 
     #delete contact gw
     dict_ic['L_contact_gw'] = []
@@ -155,30 +154,6 @@ def define_group(dict_algorithm, dict_ic, dict_sample, simulation_report):
     #plot group distribution
     Owntools.Plot.Plot_group_distribution(dict_ic)
     simulation_report.tac_tempo(datetime.now(), 'Define groups')
-
-#-------------------------------------------------------------------------------
-
-def load_ic_group(dict_algorithm, dict_ic, dict_material, dict_sample, dict_sollicitations, simulation_report) :
-    """
-    Generate an initial condition.
-
-    Polygons are loaded with top group until a steady-state is detected.
-
-        Input :
-            an algorithm dictionnary (a dict)
-            an initial condition dictionnary (a dict)
-            a material dictionnary (a dict)
-            a sample dictionnary (a dict)
-            a sollicitations dictionnary (a dict)
-            a simulation report (a report)
-        Output :
-            Nothing, but dictionnaries are updated
-    """
-    #load discrete grains
-    print('Load with top group')
-    simulation_report.tic_tempo(datetime.now())
-    Create_IC_Polygonal.DEM_loading_group(dict_algorithm, dict_ic, dict_material, dict_sample, dict_sollicitations, simulation_report)
-    simulation_report.tac_tempo(datetime.now(), 'Loading with polygons with groups')
 
 #-------------------------------------------------------------------------------
 
@@ -226,28 +201,6 @@ def load_sample(dict_algorithm, dict_material, dict_sample, dict_sollicitations,
 
 #-------------------------------------------------------------------------------
 
-def shear_sample(dict_algorithm, dict_material, dict_sample, dict_sollicitations, dict_tracker, simulation_report):
-    '''
-    Shear the sample.
-
-        Input :
-            an algorithm dictionnary (a dict)
-            a material dictionnary (a dict)
-            a sample dictionnary (a dict)
-            a sollicitations dictionnary (a dict)
-            a tracker dictionnary (a dict)
-            a simulation report (a report)
-        Output :
-            Nothing, but dictionnaries are updated
-    '''
-    #shear sample
-    simulation_report.write_and_print('\nShearing the sample\n', 'Shearing the sample')
-    simulation_report.tic_tempo(datetime.now())
-    Shear_Polygonal.DEM_shear_load(dict_algorithm, dict_material, dict_sample, dict_sollicitations, dict_tracker, simulation_report)
-    simulation_report.tac_tempo(datetime.now(), 'Shearing')
-
-#-------------------------------------------------------------------------------
-
 def close_simulation(dict_algorithm, dict_geometry, dict_ic, dict_material, dict_sample, dict_sollicitations, simulation_report):
     '''
     Close the simulation.
@@ -263,8 +216,14 @@ def close_simulation(dict_algorithm, dict_geometry, dict_ic, dict_material, dict
         Output :
             Nothing, but dictionnaries are updated
     '''
-    pass
-
+    Owntools.Save.save_dicts(dict_algorithm, dict_geometry, dict_ic, dict_material, dict_sample, dict_sollicitations, dict_tracker, simulation_report)
+    #Saving data
+    if dict_algorithm['SaveData'] :
+        name_actual_folder = os.path.dirname(os.path.realpath(__file__))
+        shutil.copytree(name_actual_folder, '../'+dict_algorithm['main_folder_name']+'/'+dict_algorithm['name_folder'])
+        os.remove(dict_algorithm['name_folder']+'_save_dicts')
+        os.remove(dict_algorithm['name_folder']+'_ic_save_dicts')
+        
 #-------------------------------------------------------------------------------
 #main
 #-------------------------------------------------------------------------------
@@ -277,18 +236,13 @@ if '__main__' == __name__:
     #ic generation
     generate_ic(dict_algorithm, dict_geometry, dict_ic, dict_material, dict_sample, dict_sollicitations, simulation_report)
     define_group(dict_algorithm, dict_ic, dict_sample, simulation_report)
-    #load_ic_group(dict_algorithm, dict_ic, dict_material, dict_sample, dict_sollicitations, simulation_report)
 
     #convert ic to real grain
     from_ic_to_real(dict_algorithm, dict_geometry, dict_ic, dict_material, dict_sample, dict_sollicitations, simulation_report)
 
     #load
     dict_tracker = {}
-
     load_sample(dict_algorithm, dict_material, dict_sample, dict_sollicitations, dict_tracker, simulation_report)
-    raise ValueError('stop')
 
-    shear_sample(dict_algorithm, dict_material, dict_sample, dict_sollicitations, dict_tracker, simulation_report)
-
-    #cose simulation
+    #close simulation
     close_simulation(dict_algorithm, dict_geometry, dict_ic, dict_material, dict_sample, dict_sollicitations, simulation_report)

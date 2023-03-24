@@ -100,6 +100,28 @@ def All_parameters():
     }
 
     #---------------------------------------------------------------------------
+    #External sollicitations
+
+    #gravity
+    gravity = 0 #µm/s2
+
+    #Confinement load
+    Vertical_Confinement_Linear_Force = Y*4*R_mean/1000 #µN/µm used to compute the Vertical_Confinement_Force
+    Vertical_Confinement_Force = Vertical_Confinement_Linear_Force*(x_box_max-x_box_min) #µN
+    dy_top = R_mean*0.0001 #increment of displacement for top group
+    i_apply_dy_top = 100 #frequency of increment the top group
+    i_DEM_stop = 10000 #stop iteration
+
+    #write dict
+    dict_sollicitations = {
+    'gravity' : gravity,
+    'Vertical_Confinement_Force' : Vertical_Confinement_Force,
+    'dy_top' : dy_top,
+    'i_apply_dy_top' : i_apply_dy_top,
+    'i_DEM_stop' : i_DEM_stop
+    }
+
+    #---------------------------------------------------------------------------
     #Algorithm parameters
 
     #Phase field
@@ -130,24 +152,15 @@ def All_parameters():
     #Periodic conditions
     d_to_image = 2 * max(L_R) #distance to wall to generate images
 
-    #PID corrector to apply confinement force on Top group (used in IC generation)
-    PID_kp = 10**(-8) #proportionnal to the error
-    dy_top_max = R_mean*0.001 #limit the displacement of the top group
-    #Apply confinement force (Owntools.Confinement algorithm used during shearing)
-    height_to_consider = top_height + 2*R_mean
-    dy_top = R_mean*0.001 #increment of displacement for top group
-
     #Number of processor
     np_proc = 4
 
     #Debug
-    Debug = True #plot configuration before and after DEM simulation
     Debug_DEM = True #plot configuration inside DEM
-    i_print_plot = 100 #frenquency of the print and plot (if Debug_DEM) in DEM step
-    clean_memory = True #delete Data, Input, Output at the end of the simulation
+    i_print_plot = 200 #frenquency of the print and plot (if Debug_DEM) in DEM step
     SaveData = True #save simulation
-    main_folder_name = 'Data_Shear' #where data are saved
-    template_simulation_name = 'Run_' #template of the simulation name
+    main_folder_name = 'Data_VerticalLoad' #where data are saved
+    template_simulation_name = 'dy_'+str(int(dy_top/R_mean*100000))+'_i_'+str(int(i_apply_dy_top))+'_run_' #template of the simulation name
 
     #Write dict
     dict_algorithm = {
@@ -165,15 +178,9 @@ def All_parameters():
     'bottom_height' : bottom_height,
     'top_height' : top_height,
     'd_to_image' : d_to_image,
-    'kp' : PID_kp,
-    'dy_top_max' : dy_top_max,
-    'height_to_consider' : height_to_consider,
-    'dy_top' : dy_top,
     'np_proc' : np_proc,
-    'Debug' : Debug,
     'Debug_DEM' : Debug_DEM,
     'i_print_plot' : i_print_plot,
-    'clean_memory' : clean_memory,
     'SaveData' : SaveData,
     'main_folder_name' : main_folder_name,
     'template_simulation_name' : template_simulation_name
@@ -214,34 +221,6 @@ def All_parameters():
     'Ecin_ratio_IC' : Ecin_ratio_IC,
     'Debug_DEM' : Debug_DEM_IC,
     'i_print_plot_IC' : i_print_plot_IC
-    }
-
-    #---------------------------------------------------------------------------
-    #External sollicitations
-
-    #gravity
-    gravity = 0 #µm/s2
-
-    #Confinement load
-    Vertical_Confinement_Linear_Force = Y*4*R_mean/1000 #µN/µm used to compute the Vertical_Confinement_Force
-    Vertical_Confinement_Force = Vertical_Confinement_Linear_Force*(x_box_max-x_box_min) #µN
-
-    #Shear
-    #U_shear = R_mean / 100000
-    U_shear = 0
-    Shear_velocity = U_shear/dt_DEM_IC
-    Shear_strain_target = .25 #total shear displacement / initial sample height
-
-    #stop iteration
-    i_DEM_stop = 1
-
-    #write dict
-    dict_sollicitations = {
-    'gravity' : gravity,
-    'Vertical_Confinement_Force' : Vertical_Confinement_Force,
-    'Shear_velocity' : Shear_velocity,
-    'Shear_strain_target' : Shear_strain_target,
-    'i_DEM_stop' : i_DEM_stop
     }
 
     #---------------------------------------------------------------------------
