@@ -102,9 +102,9 @@ def All_parameters():
     #Confinement load
     Vertical_Confinement_Linear_Force = Y*4*R_mean/1000 #µN/µm used to compute the Vertical_Confinement_Force
     Vertical_Confinement_Force = Vertical_Confinement_Linear_Force*(x_box_max-x_box_min) #µN
-    dy_top = R_mean*0.001 #increment of displacement for top group
+    dy_top = R_mean*0.0002 #increment of displacement for top group
     i_apply_dy_top = 300 #frequency of increment the top group
-    i_DEM_stop = 6000 #stop iteration
+    i_DEM_stop = i_apply_dy_top*50 #stop iteration
 
     #write dict
     dict_sollicitations = {

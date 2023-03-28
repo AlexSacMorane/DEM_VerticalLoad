@@ -171,6 +171,7 @@ def DEM_confine_load(dict_algorithm, dict_material, dict_sample, dict_sollicitat
 
         #tracker
         dict_tracker['vertical_force_L'].append(Fv)
+        vertical_force_L_tempo.append(Fv)
         dict_tracker['Ecin_L'].append(Ecin)
         dict_tracker['Force_L'].append(Force_applied)
 
