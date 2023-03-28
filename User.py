@@ -102,9 +102,9 @@ def All_parameters():
     #Confinement load
     Vertical_Confinement_Linear_Force = Y*4*R_mean/1000 #µN/µm used to compute the Vertical_Confinement_Force
     Vertical_Confinement_Force = Vertical_Confinement_Linear_Force*(x_box_max-x_box_min) #µN
-    dy_top = R_mean*0.0001 #increment of displacement for top group
-    i_apply_dy_top = 1000 #frequency of increment the top group
-    i_DEM_stop = 1000 #stop iteration
+    dy_top = R_mean*0.001 #increment of displacement for top group
+    i_apply_dy_top = 300 #frequency of increment the top group
+    i_DEM_stop = 6000 #stop iteration
 
     #write dict
     dict_sollicitations = {
@@ -121,7 +121,7 @@ def All_parameters():
     #DEM parameters
     dt_DEM_crit = math.pi*min(L_R)/(0.16*nu+0.88)*math.sqrt(rho*(2+2*nu)/Y) #s critical time step from O'Sullivan 2011
     dt_DEM = dt_DEM_crit/8 #s time step during DEM simulation
-    factor_neighborhood = 1 #margin to detect a grain into a neighborhood
+    factor_neighborhood = 1.01 #margin to detect a grain into a neighborhood
     i_update_neighborhoods = 1 #the frequency of the update of the neighborhood of the grains and the walls
     Spring_type = 'Ponctual' #Kind of contact
 
@@ -134,7 +134,7 @@ def All_parameters():
 
     #Debug
     Debug_DEM = True #plot configuration inside DEM
-    i_print_plot = 200 #frenquency of the print and plot (if Debug_DEM) in DEM step
+    i_print_plot = 300 #frenquency of the print and plot (if Debug_DEM) in DEM step
     SaveData = True #save simulation
     main_folder_name = 'Data_VerticalLoad' #where data are saved
     template_simulation_name = 'dy_'+str(int(dy_top/R_mean*100000))+'_i_'+str(int(i_apply_dy_top))+'_run_' #template of the simulation name
