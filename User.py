@@ -45,7 +45,7 @@ def All_parameters():
     for i in range(len(L_R)):
         R_mean = R_mean + L_R[i]*L_percentage_R[i]
     #Grain discretization
-    discretization = 60
+    discretization = 100
 
     #Write dict
     dict_geometry = {
@@ -67,10 +67,6 @@ def All_parameters():
     mu_friction = 0.5 #grain-grain
     coeff_restitution = 0.2 #1 is perfect elastic
 
-    #PF parameters
-    M_pf = 1 # mobility
-    kc_pf = 3 #gradient coefficient
-
     #Write dict
     dict_material = {
     'Y' : Y,
@@ -79,8 +75,6 @@ def All_parameters():
     'rho_surf' : rho_surf_disk,
     'mu_friction' : mu_friction,
     'coeff_restitution' : coeff_restitution,
-    'M_pf' : M_pf,
-    'kc_pf' : kc_pf
     }
 
     #---------------------------------------------------------------------------
@@ -109,8 +103,8 @@ def All_parameters():
     Vertical_Confinement_Linear_Force = Y*4*R_mean/1000 #µN/µm used to compute the Vertical_Confinement_Force
     Vertical_Confinement_Force = Vertical_Confinement_Linear_Force*(x_box_max-x_box_min) #µN
     dy_top = R_mean*0.0001 #increment of displacement for top group
-    i_apply_dy_top = 100 #frequency of increment the top group
-    i_DEM_stop = 10000 #stop iteration
+    i_apply_dy_top = 1000 #frequency of increment the top group
+    i_DEM_stop = 1000 #stop iteration
 
     #write dict
     dict_sollicitations = {
@@ -123,20 +117,6 @@ def All_parameters():
 
     #---------------------------------------------------------------------------
     #Algorithm parameters
-
-    #Phase field
-    dt_PF = 0.01 #s time step during MOOSE simulation
-    n_t_PF = 10 #number of iterations PF
-    factor_distribution_etai = 1.5 #margin to distribute etai
-    n_local = 40 #number of node inside local PF simulation
-    dx_local = 2*min(dict_geometry['L_R'])/(n_local-1)
-    dy_local = 2*min(dict_geometry['L_R'])/(n_local-1)
-
-    #From those date, add variables into material dict
-    w = 4*math.sqrt(dx_local**2+dy_local**2)
-    double_well_height = 10*dict_material['kc_pf']/w/w
-    dict_material['w'] = w
-    dict_material['double_well_height'] = double_well_height
 
     #DEM parameters
     dt_DEM_crit = math.pi*min(L_R)/(0.16*nu+0.88)*math.sqrt(rho*(2+2*nu)/Y) #s critical time step from O'Sullivan 2011
@@ -152,9 +132,6 @@ def All_parameters():
     #Periodic conditions
     d_to_image = 2 * max(L_R) #distance to wall to generate images
 
-    #Number of processor
-    np_proc = 4
-
     #Debug
     Debug_DEM = True #plot configuration inside DEM
     i_print_plot = 200 #frenquency of the print and plot (if Debug_DEM) in DEM step
@@ -164,12 +141,6 @@ def All_parameters():
 
     #Write dict
     dict_algorithm = {
-    'dt_PF' : dt_PF,
-    'n_t_PF' : n_t_PF,
-    'factor_distribution_etai' : factor_distribution_etai,
-    'n_local' : n_local,
-    'dx_local' : dx_local,
-    'dy_local' : dy_local,
     'dt_DEM_crit' : dt_DEM_crit,
     'dt_DEM' : dt_DEM,
     'factor_neighborhood' : factor_neighborhood,
@@ -178,7 +149,6 @@ def All_parameters():
     'bottom_height' : bottom_height,
     'top_height' : top_height,
     'd_to_image' : d_to_image,
-    'np_proc' : np_proc,
     'Debug_DEM' : Debug_DEM,
     'i_print_plot' : i_print_plot,
     'SaveData' : SaveData,
